@@ -8,6 +8,7 @@ msg = "Tracking line solving"
 parser = argparse.ArgumentParser(description = msg)
 parser.add_argument("-i", "--input", help = "Input file", default="data.data")
 parser.add_argument("-o", "--output", help = "Output file", default="solved.data")
+parser.add_argument("-t", "--type", help = "speed/raw/naive", default="speed")
 parser.add_argument("-s", "--show", help = "Show plot results", default=False)
 parser.add_argument("-r", "--restrict", help = "Restrict number of tracks", default=0)
 parser.add_argument("-cp", "--compare", help = "Comapre the raw results with the solved ones", default=False)
@@ -18,14 +19,19 @@ tracks = []
 with open(args.input, 'rb') as filehandle:
     tracks = pickle.load(filehandle)
 
+alreadyDisplayedFrameDrops = False
+
 def getNumberTracks(frames):
+    global alreadyDisplayedFrameDrops
     numberTracks = []
     for frame in frames:
         numberTracks.append(len(frame[1]))
-    if args.show:
+    if args.show and not alreadyDisplayedFrameDrops:
+        alreadyDisplayedFrameDrops = True
         plt.plot(numberTracks)
         plt.show()
     return int(np.median(numberTracks))
+
 
 def associate_tracks(frames):
     associated = [[] for _ in range(getNumberTracks(frames))]
@@ -38,11 +44,15 @@ def associate_tracks(frames):
             if len(track)<=0:
                 track.append(potentials.pop(0))
                 continue
+            if len(potentials)<=0:
+                track.append((0, 0))
+                continue
             distances = []
             for potential in potentials:
                 distances.append(np.linalg.norm((np.array(potential) - np.array(track[-1]))))
             indexOfMin = np.argmin(distances)
             track.append(potentials[indexOfMin])
+            potentials.remove(potentials[indexOfMin])
     return associated
 
 
@@ -59,13 +69,14 @@ def associate_tracks_withSpeed(frames):
                 continue
             if len(track)>=2:
                 if len(potentials)<=0:
-                    break
+                    track.append((0, 0))
+                    continue
                 # Use speed to determine best match
                 speed = np.linalg.norm(np.array(track[-1]) - np.array(track[-2]))
                 # Compute the potential speeds
                 potentials_speed = []
                 for i in potentials:
-                    potentials_speed.append(np.linalg.norm(np.array(i) - np.array(track[-1])))
+                    potentials_speed.append(np.abs(np.linalg.norm(np.array(i) - np.array(track[-1]))-speed))
                 # Find the best match
                 best_match = potentials[np.argmin(potentials_speed)]
                 track.append(best_match)
@@ -80,10 +91,13 @@ def associate_tracks_withSpeed(frames):
     return associated
 
 
-def naive_associate(frames):
+def raw_associate(frames):
     associated = [[] for _ in range(getNumberTracks(frames))]
     for frame in frames:
-        for i in range(len(frame[1])):
+        for i in range(len(associated)):
+            if i>=len(frame[1]):
+                associated[i].append((0, 0))
+                continue
             associated[i].append(frame[1][i])
     return associated
 
@@ -92,15 +106,16 @@ solvedTracksSpeed = associate_tracks_withSpeed(tracks)
 if args.restrict:
     solvedTracksSpeed = solvedTracksSpeed[:int(args.restrict)]
 
+solvedTracks = associate_tracks(tracks)
+rawTracks = raw_associate(tracks)
+if args.restrict:
+    solvedTracks = solvedTracks[:int(args.restrict)]
+    rawTracks = rawTracks[:int(args.restrict)]
+
 if args.compare:
-    solvedTracks = associate_tracks(tracks)
-    naiveTracks = naive_associate(tracks)
-    if args.restrict:
-        solvedTracks = solvedTracks[:int(args.restrict)]
-        naiveTracks = naiveTracks[:int(args.restrict)]
     i=0
-    for i in range(len(naiveTracks)):
-        nT = naiveTracks[i]
+    for i in range(len(rawTracks)):
+        nT = rawTracks[i]
         T = solvedTracks[i]
         Ts = solvedTracksSpeed[i]
         plt.figure()
@@ -118,7 +133,7 @@ if args.compare:
         plt.title("Track speed " + str(i))
         i+=1
     plt.show()
-else:
+elif int(args.show)>=2:
     i=0
     for track in solvedTracksSpeed:
         plt.figure()
@@ -130,4 +145,11 @@ else:
 
 if args.output:
     with open(args.output, 'wb') as filehandle:
-        pickle.dump(solvedTracksSpeed, filehandle)
+        if args.type == "speed":
+            pickle.dump(solvedTracksSpeed, filehandle)
+        elif args.type == "raw":
+            pickle.dump(rawTracks, filehandle)
+        elif args.type == "naive":
+            pickle.dump(solvedTracks, filehandle)
+        else:
+            print("Unknown type")
