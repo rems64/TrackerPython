@@ -58,6 +58,7 @@ plt.show()
 
 import pickle
 
+print(tracks)
 
 with open(utils.check_extension(args.output, "data"), 'wb') as filehandle:
     # store the data as binary data stream
