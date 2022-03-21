@@ -10,6 +10,7 @@ parser.add_argument("-d", "--data", help = "Input data file", default="tracked.d
 parser.add_argument("-o", "--output", help = "Output file", default="reassociated.mp4")
 parser.add_argument("-r", "--restrict", help = "Restrict frame count", default=100000)
 parser.add_argument("-s", "--show", help = "Show raw result", default=False)
+# parser.add_argument("-i", "--iterate", help = "Iterate frame by frame over the result", default=False)
 args = parser.parse_args()
 
 
@@ -38,6 +39,8 @@ for track in tracks:
     print("Track " + str(i) + " : " + str(len(track)))
     i+=1
 
+paused = False
+
 while cap.isOpened():
     ret, pic = cap.read()
     if ret:
@@ -52,10 +55,27 @@ while cap.isOpened():
         
         cv2.putText(withTrack, "Frame " + str(frame), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 1)
         cv2.putText(sized, "Frame " + str(frame), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 1)
-        cv2.imshow("original", sized)
-        cv2.imshow("tracked", withTrack)
-        frame += 1
-        if cv2.waitKey(25) & 0xFF == ord('q'):
+        cv2.imshow("Original", sized)
+        cv2.imshow("Tracked", withTrack)
+        key = cv2.waitKey(10)
+        if key == ord('q'):
             break
+        elif key == ord('p'):
+            paused = True
+        if paused:
+            key = cv2.waitKey()
+            if key == ord('p'):
+                paused = False
+            elif key == ord('l'):
+                frame += 1
+                cap.set(1, frame)
+                continue
+            elif key == ord('j'):
+                frame -= 1
+                cap.set(1, frame)
+                continue
+            elif key == ord('q'):
+                break
+        frame += 1
     else:
         break

@@ -55,6 +55,8 @@ if args.show:
         plt.plot([k for k in range(len(track))], [i[1] for i in track], 'g-')
     plt.show()
 
+print("Detected {} tracks".format(len(tracks)))
+
 with open(utils.check_extension(args.output, "data"), 'wb') as filehandle:
     # store the data as binary data stream
     pickle.dump(tracks, filehandle)

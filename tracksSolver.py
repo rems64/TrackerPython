@@ -30,6 +30,7 @@ def getNumberTracks(frames):
         alreadyDisplayedFrameDrops = True
         plt.plot(numberTracks)
         plt.show()
+    return int(max(numberTracks))
     return int(np.median(numberTracks))
 
 
@@ -41,11 +42,14 @@ def associate_tracks(frames):
             # print(i)
             potentials.append(i)
         for track in associated:
+            if len(potentials)<=0:
+                # if len(track)>0:
+                #     track.append(track[-1])
+                # else:
+                track.append((0, 0))
+                continue
             if len(track)<=0:
                 track.append(potentials.pop(0))
-                continue
-            if len(potentials)<=0:
-                track.append((0, 0))
                 continue
             distances = []
             for potential in potentials:
@@ -57,28 +61,53 @@ def associate_tracks(frames):
 
 
 def associate_tracks_withSpeed(frames):
-    associated = [[] for _ in range(getNumberTracks(frames))]
+    associatedCount = getNumberTracks(frames)
+    associated = [[] for _ in range(associatedCount)]
+    cFrame = 0
     for frame in frames:
+        cFrame+=1
         potentials = []
         for i in frame[1]:
             # print(i)
             potentials.append(i)
-        for track in associated:
+        
+        # Perform matching
+        selected = []
+        associatedTmp = associated.copy()
+        # if len(potentials)<associatedCount:
+        #     for potential in potentials:
+        #         distances = [np.linalg.norm((np.array(potential) - np.array(track[-1]))) if len(track)>0 else 0 for track in associatedTmp]
+        #         selected.append(associatedTmp[np.argmin(distances)])
+        #         associatedTmp.remove(associatedTmp[np.argmin(distances)])
+        # else:
+        selected = associated
+        for track in selected:
+            if len(potentials)<=0:
+                # if len(track)>0:
+                #     track.append(track[-1])
+                # else:
+                track.append((0, 0))
+                continue
             if len(track)<=0:
                 track.append(potentials.pop(0))
                 continue
-            if len(track)>=2:
-                if len(potentials)<=0:
-                    track.append((0, 0))
-                    continue
-                # Use speed to determine best match
-                speed = np.linalg.norm(np.array(track[-1]) - np.array(track[-2]))
+            # if len(track)>=4000:
+            #     acceleration = np.array(track[-1]) - np.array(track[-2]) - np.array(track[-3]) + np.array(track[-4])
+            #     potential_accelerations = []
+            #     for potential in potentials:
+            #         potential_accelerations.append(np.linalg.norm(np.array(potential) - np.array(track[-1]) - np.array(track[-2]) + np.array(track[-3] - acceleration)))
+            #     best_match = potentials[np.argmin(potential_accelerations)]
+            #     track.append(best_match)
+            #     potentials.remove(best_match)
+            elif len(track)>=2:
+                # Fallback to speed
+                speed = np.array(track[-1]) - np.array(track[-2])
                 # Compute the potential speeds
-                potentials_speed = []
+                deltas = []
                 for i in potentials:
-                    potentials_speed.append(np.abs(np.linalg.norm(np.array(i) - np.array(track[-1]))-speed))
+                    deltas.append(np.linalg.norm(np.array(i) - np.array(track[-1]) - speed))
                 # Find the best match
-                best_match = potentials[np.argmin(potentials_speed)]
+                best_match = potentials[np.argmin(deltas)]
                 track.append(best_match)
                 potentials.remove(best_match)
             else:
