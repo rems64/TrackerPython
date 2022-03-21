@@ -1,12 +1,4 @@
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
 import argparse
-import utils
-import pickle
-
-
-
 
 msg = "Fast marker detection"
 
@@ -16,6 +8,14 @@ parser.add_argument("-o", "--output", help = "Output file", default="tracked.dat
 parser.add_argument("-r", "--restrict", help = "Restrict frame count", default=100000)
 parser.add_argument("-s", "--show", help = "Show raw result", default=False)
 args = parser.parse_args()
+
+
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import utils
+import pickle
+
 
 
 cap = cv2.VideoCapture(args.input)

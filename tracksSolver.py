@@ -1,7 +1,4 @@
-import pickle
 import argparse
-import matplotlib.pyplot as plt
-import numpy as np
 
 msg = "Tracking line solving"
 
@@ -11,8 +8,14 @@ parser.add_argument("-o", "--output", help = "Output file", default="solved.data
 parser.add_argument("-t", "--type", help = "speed/raw/naive", default="speed")
 parser.add_argument("-s", "--show", help = "Show plot results", default=False)
 parser.add_argument("-r", "--restrict", help = "Restrict number of tracks", default=0)
-parser.add_argument("-cp", "--compare", help = "Comapre the raw results with the solved ones", default=False)
+parser.add_argument("-cp", "--compare", help = "Compare the raw results with the solved ones", default=False)
+parser.add_argument("-d", "--derivatives", help = "Compute discrete derivatives", default=False)
 args = parser.parse_args()
+
+import pickle
+import matplotlib.pyplot as plt
+import numpy as np
+import utils
 
 tracks = []
 # Open the input list
@@ -83,10 +86,10 @@ def associate_tracks_withSpeed(frames):
         selected = associated
         for track in selected:
             if len(potentials)<=0:
-                # if len(track)>0:
-                #     track.append(track[-1])
-                # else:
-                track.append((0, 0))
+                if len(track)>0:
+                    track.append(track[-1])
+                else:
+                    track.append((0, 0))
                 continue
             if len(track)<=0:
                 track.append(potentials.pop(0))
@@ -142,25 +145,61 @@ if args.restrict:
     rawTracks = rawTracks[:int(args.restrict)]
 
 if args.compare:
-    i=0
-    for i in range(len(rawTracks)):
-        nT = rawTracks[i]
-        T = solvedTracks[i]
-        Ts = solvedTracksSpeed[i]
-        plt.figure()
-        plt.subplot(3, 1, 1)
-        plt.plot([k for k in range(len(nT))], [i[0] for i in nT], 'r-')
-        plt.plot([k for k in range(len(nT))], [i[1] for i in nT], 'g-')
-        plt.title("Raw track " + str(i))
-        plt.subplot(3, 1, 2)
-        plt.plot([k for k in range(len(T))], [i[0] for i in T], 'r-')
-        plt.plot([k for k in range(len(T))], [i[1] for i in T], 'g-')
-        plt.title("Track " + str(i))
-        plt.subplot(3, 1, 3)
-        plt.plot([k for k in range(len(Ts))], [i[0] for i in Ts], 'r-')
-        plt.plot([k for k in range(len(Ts))], [i[1] for i in Ts], 'g-')
-        plt.title("Track speed " + str(i))
-        i+=1
+    if args.derivatives:
+        i=0
+        for i in range(len(rawTracks)):
+            nT = rawTracks[i]
+            T = solvedTracks[i]
+            Ts = solvedTracksSpeed[i]
+            plt.figure()
+            plt.subplot(3, 2, 1)
+            plt.plot([i[0] for i in nT], 'r-')
+            plt.plot([i[1] for i in nT], 'g-')
+            plt.title("Raw " + str(i))
+            plt.subplot(3, 2, 2)
+            plt.plot(utils.deriveeUniformeDiscrete([i[0] for i in nT]), 'r-')
+            plt.plot(utils.deriveeUniformeDiscrete([i[1] for i in nT]), 'g-')
+            plt.title("Raw derivitive" + str(i))
+
+            plt.subplot(3, 2, 3)
+            plt.plot([i[0] for i in T], 'r-')
+            plt.plot([i[1] for i in T], 'g-')
+            plt.title("Naive " + str(i))
+            plt.subplot(3, 2, 4)
+            plt.plot(utils.deriveeUniformeDiscrete([i[0] for i in T]), 'r-')
+            plt.plot(utils.deriveeUniformeDiscrete([i[1] for i in T]), 'g-')
+            plt.title("Naive derivitive" + str(i))
+
+            plt.subplot(3, 2, 5)
+            plt.plot([i[0] for i in Ts], 'r-')
+            plt.plot([i[1] for i in Ts], 'g-')
+            plt.title("Smooth " + str(i))
+            plt.subplot(3, 2, 6)
+            plt.plot(utils.deriveeUniformeDiscrete([i[0] for i in Ts]), 'r-')
+            plt.plot(utils.deriveeUniformeDiscrete([i[1] for i in Ts]), 'g-')
+            plt.title("Smooth derivitive" + str(i))
+
+            i+=1
+    else:
+        i=0
+        for i in range(len(rawTracks)):
+            nT = rawTracks[i]
+            T = solvedTracks[i]
+            Ts = solvedTracksSpeed[i]
+            plt.figure()
+            plt.subplot(3, 1, 1)
+            plt.plot([i[0] for i in nT], 'r-')
+            plt.plot([i[1] for i in nT], 'g-')
+            plt.title("Raw " + str(i))
+            plt.subplot(3, 1, 2)
+            plt.plot([i[0] for i in T], 'r-')
+            plt.plot([i[1] for i in T], 'g-')
+            plt.title("Naive " + str(i))
+            plt.subplot(3, 1, 3)
+            plt.plot([i[0] for i in Ts], 'r-')
+            plt.plot([i[1] for i in Ts], 'g-')
+            plt.title("Smooth " + str(i))
+            i+=1
     plt.show()
 elif int(args.show)>=2:
     i=0
