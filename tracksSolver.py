@@ -76,7 +76,7 @@ def associate_tracks_withSpeed(frames):
         
         # Perform matching
         selected = []
-        associatedTmp = associated.copy()
+        # associatedTmp = associated.copy()
         # if len(potentials)<associatedCount:
         #     for potential in potentials:
         #         distances = [np.linalg.norm((np.array(potential) - np.array(track[-1]))) if len(track)>0 else 0 for track in associatedTmp]
@@ -84,6 +84,7 @@ def associate_tracks_withSpeed(frames):
         #         associatedTmp.remove(associatedTmp[np.argmin(distances)])
         # else:
         selected = associated
+        shouldRemove = len(selected)<=len(potentials)
         for track in selected:
             if len(potentials)<=0:
                 if len(track)>0:
@@ -94,7 +95,7 @@ def associate_tracks_withSpeed(frames):
             if len(track)<=0:
                 track.append(potentials.pop(0))
                 continue
-            # if len(track)>=4000:
+            # if len(track)>=4:
             #     acceleration = np.array(track[-1]) - np.array(track[-2]) - np.array(track[-3]) + np.array(track[-4])
             #     potential_accelerations = []
             #     for potential in potentials:
@@ -112,7 +113,8 @@ def associate_tracks_withSpeed(frames):
                 # Find the best match
                 best_match = potentials[np.argmin(deltas)]
                 track.append(best_match)
-                potentials.remove(best_match)
+                if shouldRemove:
+                    potentials.remove(best_match)
             else:
                 # Fallback to closest
                 distances = []
@@ -120,6 +122,7 @@ def associate_tracks_withSpeed(frames):
                     distances.append(np.linalg.norm((np.array(potential) - np.array(track[-1]))))
                 indexOfMin = np.argmin(distances)
                 track.append(potentials[indexOfMin])
+                potentials.remove(potentials[indexOfMin])
     return associated
 
 
@@ -155,33 +158,41 @@ if args.compare:
             plt.subplot(3, 2, 1)
             plt.plot([i[0] for i in nT], 'r-')
             plt.plot([i[1] for i in nT], 'g-')
+            plt.legend(["x", "y"])
             plt.title("Raw " + str(i))
             plt.subplot(3, 2, 2)
             plt.plot(utils.deriveeUniformeDiscrete([i[0] for i in nT]), 'r-')
             plt.plot(utils.deriveeUniformeDiscrete([i[1] for i in nT]), 'g-')
+            plt.legend(["x", "y"])
             plt.title("Raw derivitive" + str(i))
 
             plt.subplot(3, 2, 3)
             plt.plot([i[0] for i in T], 'r-')
             plt.plot([i[1] for i in T], 'g-')
+            plt.legend(["x", "y"])
             plt.title("Naive " + str(i))
             plt.subplot(3, 2, 4)
             plt.plot(utils.deriveeUniformeDiscrete([i[0] for i in T]), 'r-')
             plt.plot(utils.deriveeUniformeDiscrete([i[1] for i in T]), 'g-')
+            plt.legend(["x", "y"])
             plt.title("Naive derivitive" + str(i))
 
             plt.subplot(3, 2, 5)
             plt.plot([i[0] for i in Ts], 'r-')
             plt.plot([i[1] for i in Ts], 'g-')
+            plt.legend(["x", "y"])
             plt.title("Smooth " + str(i))
             plt.subplot(3, 2, 6)
             plt.plot(utils.deriveeUniformeDiscrete([i[0] for i in Ts]), 'r-')
             plt.plot(utils.deriveeUniformeDiscrete([i[1] for i in Ts]), 'g-')
+            plt.legend(["x", "y"])
             plt.title("Smooth derivitive" + str(i))
 
             i+=1
     else:
         i=0
+        # print(solvedTracksSpeed)
+        # exit()
         for i in range(len(rawTracks)):
             nT = rawTracks[i]
             T = solvedTracks[i]
@@ -190,14 +201,17 @@ if args.compare:
             plt.subplot(3, 1, 1)
             plt.plot([i[0] for i in nT], 'r-')
             plt.plot([i[1] for i in nT], 'g-')
+            plt.legend(["x", "y"])
             plt.title("Raw " + str(i))
             plt.subplot(3, 1, 2)
             plt.plot([i[0] for i in T], 'r-')
             plt.plot([i[1] for i in T], 'g-')
+            plt.legend(["x", "y"])
             plt.title("Naive " + str(i))
             plt.subplot(3, 1, 3)
             plt.plot([i[0] for i in Ts], 'r-')
             plt.plot([i[1] for i in Ts], 'g-')
+            plt.legend(["x", "y"])
             plt.title("Smooth " + str(i))
             i+=1
     plt.show()
@@ -207,6 +221,7 @@ elif int(args.show)>=2:
         plt.figure()
         plt.plot([k for k in range(len(track))], [i[0] for i in track], 'r-')
         plt.plot([k for k in range(len(track))], [i[1] for i in track], 'g-')
+        plt.legend(["x", "y"])
         plt.title("Track " + str(i))
         i+=1
     plt.show()
